@@ -1,0 +1,267 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="inertial_macros.xacro"/>
+
+  <!-- ═══════════════════════════════════════════════════════
+       Properties
+  ═══════════════════════════════════════════════════════ -->
+  <xacro:property name="chassis_length"    value="0.25"/>
+  <xacro:property name="chassis_width"     value="0.23"/>
+  <xacro:property name="chassis_height"    value="0.09"/>
+  <xacro:property name="chassis_mass"      value="1.0"/>
+
+  <xacro:property name="wheel_radius"      value="0.035"/>
+  <xacro:property name="wheel_thickness"   value="0.04"/>
+  <xacro:property name="wheel_mass"        value="0.05"/>
+  <xacro:property name="wheel_offset_x"    value="0.11"/>
+  <xacro:property name="wheel_offset_y"    value="0.115"/>
+  <xacro:property name="wheel_offset_z"    value="0.0"/>
+
+  <xacro:property name="standoff_height"   value="0.07"/>
+  <xacro:property name="standoff_radius"   value="0.005"/>
+  <xacro:property name="plate_length"      value="0.17"/>
+  <xacro:property name="plate_width"       value="0.18"/>
+  <xacro:property name="plate_thickness"   value="0.003"/>
+  <xacro:property name="standoff_inset_x"  value="0.02"/>
+  <xacro:property name="standoff_inset_y"  value="0.02"/>
+
+  <xacro:property name="plate_center_x"    value="0.01"/>
+  <xacro:property name="plate_center_y"    value="0.0"/>
+  <xacro:property name="plate_center_z"    value="${chassis_height + standoff_height + plate_thickness/2}"/>
+  <xacro:property name="sx"                value="${(plate_length/2) - standoff_inset_x}"/>
+  <xacro:property name="sy"                value="${(plate_width/2)  - standoff_inset_y}"/>
+  <xacro:property name="standoff_center_z" value="${chassis_height + standoff_height/2}"/>
+
+  <!-- ═══════════════════════════════════════════════════════
+       Materials
+  ═══════════════════════════════════════════════════════ -->
+  <material name="white">    <color rgba="1 1 1 1"/>       </material>
+  <material name="orange">   <color rgba="1 0.3 0.1 1"/>   </material>
+  <material name="blue">     <color rgba="0.2 0.2 1 1"/>   </material>
+  <material name="black">    <color rgba="0 0 0 1"/>        </material>
+  <material name="red">      <color rgba="1 0 0 1"/>        </material>
+  <material name="metal_gray"><color rgba="0.7 0.7 0.7 1"/></material>
+
+  <!-- ═══════════════════════════════════════════════════════
+       base_link  (TF-Root im URDF)
+       map → odom → base_link  wird von Nav2/EKF gebroadcastet
+  ═══════════════════════════════════════════════════════ -->
+  <link name="base_link"/>
+
+  <!-- ═══════════════════════════════════════════════════════
+       chassis
+  ═══════════════════════════════════════════════════════ -->
+  <joint name="chassis_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="chassis"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="chassis">
+    <visual>
+      <origin xyz="0 0 ${chassis_height/2}"/>
+      <geometry>
+        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${chassis_height/2}"/>
+      <geometry>
+        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+      </geometry>
+    </collision>
+    <xacro:inertial_box mass="0.5"
+                        x="${chassis_length}"
+                        y="${chassis_width}"
+                        z="${chassis_height}">
+      <origin xyz="0 0 ${chassis_height/2}" rpy="0 0 0"/>
+    </xacro:inertial_box>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════
+       IMU  – direkt auf chassis, zentral und stabil
+       Frame-Name: imu_link
+  ═══════════════════════════════════════════════════════ -->
+  <joint name="imu_joint" type="fixed">
+    <parent link="chassis"/>
+    <child  link="imu_link"/>
+    <!-- mittig auf der Chassis-Oberfläche -->
+    <origin xyz="0 0 ${chassis_height}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="imu_link">
+    <visual>
+      <geometry><box size="0.03 0.03 0.005"/></geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.03 0.03 0.005"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0"
+               iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════
+       Wheels
+  ═══════════════════════════════════════════════════════ -->
+
+  <!-- LEFT FRONT -->
+  <joint name="left_front_wheel_joint" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="chassis"/>
+    <child  link="left_front_wheel"/>
+    <origin xyz="0.08 ${wheel_offset_y} ${wheel_offset_z}" rpy="${pi/2} 0 0"/>
+  </joint>
+  <link name="left_front_wheel">
+    <visual>
+      <geometry><cylinder radius="${wheel_radius}" length="${wheel_thickness}"/></geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="${wheel_radius}"/></geometry>
+    </collision>
+    <xacro:inertial_cylinder mass="${wheel_mass}"
+                             length="${wheel_thickness}"
+                             radius="${wheel_radius}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder>
+  </link>
+
+  <!-- LEFT REAR -->
+  <joint name="left_rear_wheel_joint" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="chassis"/>
+    <child  link="left_rear_wheel"/>
+    <origin xyz="-0.08 ${wheel_offset_y} ${wheel_offset_z}" rpy="${pi/2} 0 0"/>
+  </joint>
+  <link name="left_rear_wheel">
+    <visual>
+      <geometry><cylinder radius="${wheel_radius}" length="${wheel_thickness}"/></geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="${wheel_radius}"/></geometry>
+    </collision>
+    <xacro:inertial_cylinder mass="${wheel_mass}"
+                             length="${wheel_thickness}"
+                             radius="${wheel_radius}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder>
+  </link>
+
+  <!-- RIGHT FRONT -->
+  <joint name="right_front_wheel_joint" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="chassis"/>
+    <child  link="right_front_wheel"/>
+    <origin xyz="0.08 ${-wheel_offset_y} ${wheel_offset_z}" rpy="${pi/2} 0 0"/>
+  </joint>
+  <link name="right_front_wheel">
+    <visual>
+      <geometry><cylinder radius="${wheel_radius}" length="${wheel_thickness}"/></geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="${wheel_radius}"/></geometry>
+    </collision>
+    <xacro:inertial_cylinder mass="${wheel_mass}"
+                             length="${wheel_thickness}"
+                             radius="${wheel_radius}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder>
+  </link>
+
+  <!-- RIGHT REAR -->
+  <joint name="right_rear_wheel_joint" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="chassis"/>
+    <child  link="right_rear_wheel"/>
+    <origin xyz="-0.08 ${-wheel_offset_y} ${wheel_offset_z}" rpy="${pi/2} 0 0"/>
+  </joint>
+  <link name="right_rear_wheel">
+    <visual>
+      <geometry><cylinder radius="${wheel_radius}" length="${wheel_thickness}"/></geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="${wheel_radius}"/></geometry>
+    </collision>
+    <xacro:inertial_cylinder mass="${wheel_mass}"
+                             length="${wheel_thickness}"
+                             radius="${wheel_radius}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════
+       Standoffs + top_plate
+  ═══════════════════════════════════════════════════════ -->
+
+  <joint name="standoff_fl_joint" type="fixed">
+    <parent link="chassis"/>
+    <child  link="standoff_fl"/>
+    <origin xyz="${plate_center_x + sx} ${plate_center_y + sy} ${standoff_center_z}" rpy="0 0 0"/>
+  </joint>
+  <link name="standoff_fl">
+    <visual><geometry><cylinder radius="${standoff_radius}" length="${standoff_height}"/></geometry><material name="metal_gray"/></visual>
+    <collision><geometry><cylinder radius="${standoff_radius}" length="${standoff_height}"/></geometry></collision>
+  </link>
+
+  <joint name="standoff_fr_joint" type="fixed">
+    <parent link="chassis"/>
+    <child  link="standoff_fr"/>
+    <origin xyz="${plate_center_x + sx} ${plate_center_y - sy} ${standoff_center_z}" rpy="0 0 0"/>
+  </joint>
+  <link name="standoff_fr">
+    <visual><geometry><cylinder radius="${standoff_radius}" length="${standoff_height}"/></geometry><material name="metal_gray"/></visual>
+    <collision><geometry><cylinder radius="${standoff_radius}" length="${standoff_height}"/></geometry></collision>
+  </link>
+
+  <joint name="standoff_rl_joint" type="fixed">
+    <parent link="chassis"/>
+    <child  link="standoff_rl"/>
+    <origin xyz="${plate_center_x - sx} ${plate_center_y + sy} ${standoff_center_z}" rpy="0 0 0"/>
+  </joint>
+  <link name="standoff_rl">
+    <visual><geometry><cylinder radius="${standoff_radius}" length="${standoff_height}"/></geometry><material name="metal_gray"/></visual>
+    <collision><geometry><cylinder radius="${standoff_radius}" length="${standoff_height}"/></geometry></collision>
+  </link>
+
+  <joint name="standoff_rr_joint" type="fixed">
+    <parent link="chassis"/>
+    <child  link="standoff_rr"/>
+    <origin xyz="${plate_center_x - sx} ${plate_center_y - sy} ${standoff_center_z}" rpy="0 0 0"/>
+  </joint>
+  <link name="standoff_rr">
+    <visual><geometry><cylinder radius="${standoff_radius}" length="${standoff_height}"/></geometry><material name="metal_gray"/></visual>
+    <collision><geometry><cylinder radius="${standoff_radius}" length="${standoff_height}"/></geometry></collision>
+  </link>
+
+  <joint name="top_plate_joint" type="fixed">
+    <parent link="chassis"/>
+    <child  link="top_plate"/>
+    <origin xyz="${plate_center_x} ${plate_center_y} ${plate_center_z}" rpy="0 0 0"/>
+  </joint>
+  <link name="top_plate">
+    <visual>
+      <geometry><box size="${plate_length} ${plate_width} ${plate_thickness}"/></geometry>
+      <material name="metal_gray"/>
+    </visual>
+    <collision>
+      <geometry><box size="${plate_length} ${plate_width} ${plate_thickness}"/></geometry>
+    </collision>
+    <xacro:inertial_box mass="0.3"
+                        x="${plate_length}"
+                        y="${plate_width}"
+                        z="${plate_thickness}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_box>
+  </link>
+
+</robot>

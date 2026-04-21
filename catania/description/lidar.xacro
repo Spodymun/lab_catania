@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<robot name="lidar_lib" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    TF-Kette:
+      top_plate  →  velodyne
+
+    "velodyne" muss dem frame_id entsprechen, das der
+    Velodyne-Treiber in den PointCloud2-Header schreibt.
+  -->
+
+  <xacro:macro name="lidar_setup"
+               params="parent:=top_plate
+                       velodyne_frame:=velodyne">
+
+    <material name="lidar_black"><color rgba="0.05 0.05 0.05 1.0"/></material>
+    <material name="lidar_blue"> <color rgba="0.2  0.5  1.0  1.0"/></material>
+
+    <joint name="velodyne_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child  link="${velodyne_frame}"/>
+      <!-- direkt auf der top_plate, Ursprung am Sensor-Boden -->
+      <origin xyz="0 0 0.002" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${velodyne_frame}">
+      <!-- Gehäuse -->
+      <visual>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry><cylinder radius="0.04" length="0.05"/></geometry>
+        <material name="lidar_black"/>
+      </visual>
+      <!-- Blauer Sensor-Ring -->
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><cylinder radius="0.041" length="0.0015"/></geometry>
+        <material name="lidar_blue"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry><cylinder radius="0.04" length="0.05"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="0.25"/>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <inertia ixx="0.002" ixy="0" ixz="0"
+                 iyy="0.002" iyz="0" izz="0.002"/>
+      </inertial>
+    </link>
+
+  </xacro:macro>
+</robot>
