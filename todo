@@ -1,0 +1,4 @@
+1. Find out why the imu is running away
+-> this issue will most likely be a calculation issue by the imu himself, because we can see the wrong data without launching anything else
+
+2. If step 1 works and we still have twitching issues it might be a real time issue by the laptop
