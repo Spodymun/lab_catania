@@ -1,4 +1,18 @@
-1. Find out why the imu is running away
--> this issue will most likely be a calculation issue by the imu himself, because we can see the wrong data without launching anything else
+I think the most important Thing is that our data Looks like the data in the Video and for that we Need to Change the IMU Code, because our IMU works different than theirs
+-> the Units of our imu should be ok with the multiplications (did it myself) and it seems like we are using the switch case of "raw data"
 
-2. If step 1 works and we still have twitching issues it might be a real time issue by the laptop
+float gyro_x = ep_Raw_GyroAccMag.gyro[0] * DEG_TO_RAD;
+float gyro_y = ep_Raw_GyroAccMag.gyro[1] * DEG_TO_RAD;
+float gyro_z = ep_Raw_GyroAccMag.gyro[2] * DEG_TO_RAD;
+
+-> Maybe these should be negative too? We still Need to fix the Rotation layout. The IMU Data still Needs to look like in the Video
+
+When you tilt the sensor 30° to the left, two things need to agree:
+The accelerometer measures the changed direction of gravity and says: "I tilted left."
+The gyroscope measures the rotation speed and tells GTSAM: "We are currently rotating to the left." From this GTSAM builds the current orientation R(t).
+GTSAM then uses R(t) to calculate how much of the accelerometer signal is gravity and subtracts it. What remains should be zero if you are not actually moving.
+
+If the gyroscope sign is wrong:
+The gyroscope says "rotating right" while the accelerometer says "tilting left". GTSAM builds the wrong R(t) and subtracts gravity in the wrong direction. Instead of cancelling out, the gravity component doubles. GTSAM then thinks the sensor is accelerating hard to the side, integrates that into velocity and it explodes.
+
+-> Also the LIDAR Data being this slow is not good, because the LIDAR will recalibrate the IMU, but can't if it'S so much off. 
